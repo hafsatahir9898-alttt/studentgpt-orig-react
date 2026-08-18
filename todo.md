@@ -137,4 +137,9 @@
 - [ ] Produce a real installed StudentGPT APK for the vivo Y04 that does not depend on the crashing WebView-only startup path.
 - [ ] Create and verify a vivo Y04 Android 15-targeted StudentGPT Flutter ZIP with a safer WebView startup configuration.
 - [x] Create a new GitHub repository for the complete StudentGPT Flutter project, document it in README, and push all source files.
-- [ ] Push the original StudentGPT React full-stack project to the user-provided GitHub repository with source, backend, schema, tests, configuration, and documentation while excluding secrets and generated artifacts.
+- [x] Push the original StudentGPT React full-stack project to the user-provided GitHub repository with source, backend, schema, tests, configuration, and documentation while excluding secrets and generated artifacts.
+- [ ] Set up and document an independent database for the original StudentGPT React project, apply its schema, and verify the backend can use it without production credentials.
+- [ ] Migrate the original StudentGPT application database layer from MySQL/TiDB to Supabase Postgres while preserving auth, storage, ownership, and academic workflows.
+- [ ] Use the existing Supabase project for StudentGPT application tables while preserving existing authentication and storage data.
+- [ ] Integrate Tavily server-side into StudentGPT research, validate the secret, add tests/documentation, and push the update to GitHub.
+- [ ] Diagnose and fix any SerpAPI research integration error, including credential validation, endpoint behavior, response normalization, and regression coverage.

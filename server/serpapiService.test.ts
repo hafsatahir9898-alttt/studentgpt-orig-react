@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normaliseCommunityResults } from "./serpapiService";
+import { isSerpNoResultsError, normaliseCommunityResults } from "./serpapiService";
 
 describe("community search result normalization", () => {
   it("keeps only unique Reddit and Quora result cards with clear source labels", () => {
@@ -13,5 +13,13 @@ describe("community search result normalization", () => {
       { title: "A Reddit thread", url: "https://www.reddit.com/r/study/comments/example", snippet: "A useful community point.", source: "Reddit" },
       { title: "A Quora answer", url: "https://www.quora.com/How-do-students-study", snippet: "Another public view.", source: "Quora" },
     ]);
+  });
+});
+
+describe("SerpAPI error classification", () => {
+  it("treats a provider no-results message as an empty result condition", () => {
+    expect(isSerpNoResultsError("Google hasn't returned any results for this query.")).toBe(true);
+    expect(isSerpNoResultsError("No results found")).toBe(true);
+    expect(isSerpNoResultsError("Invalid API key")).toBe(false);
   });
 });
