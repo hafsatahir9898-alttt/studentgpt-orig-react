@@ -212,14 +212,22 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+const hasOpenRouter = () => ENV.openrouterApiKey.trim().length > 0;
+
+const resolveApiUrl = () => {
+  if (hasOpenRouter()) {
+    return `${ENV.openrouterApiUrl.replace(/\/$/, "")}/chat/completions`;
+  }
+  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
+};
+
+const resolveApiKey = () => (hasOpenRouter() ? ENV.openrouterApiKey : ENV.forgeApiKey);
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!resolveApiKey()) {
+    throw new Error("No server-side LLM API key is configured");
   }
 };
 
@@ -362,8 +370,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     messages: messages.map(normalizeMessage),
   };
 
-  if (model) {
-    payload.model = model;
+  if (model || hasOpenRouter()) {
+    payload.model = model || ENV.openrouterModel;
   }
 
   if (tools && tools.length > 0) {
@@ -405,7 +413,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${resolveApiKey()}`,
+      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -430,14 +439,19 @@ export async function streamLLM(params: InvokeParams): Promise<Response> {
     messages: params.messages.map(normalizeMessage),
     stream: true,
   };
-  if (params.model) payload.model = params.model;
+  if (hasOpenRouter()) payload.model = params.model || ENV.openrouterModel;
+  if (params.model && !hasOpenRouter()) payload.model = params.model;
   if (params.max_tokens ?? params.maxTokens) payload.max_tokens = params.max_tokens ?? params.maxTokens;
   if (params.tools?.length) payload.tools = params.tools;
   const normalizedToolChoice = normalizeToolChoice(params.toolChoice || params.tool_choice, params.tools);
   if (normalizedToolChoice) payload.tool_choice = normalizedToolChoice;
   const response = await fetchWithBackoff(resolveApiUrl(), {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${ENV.forgeApiKey}` },
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${resolveApiKey()}`,
+      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
+    },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -462,12 +476,17 @@ export type ModelsResponse = {
 export async function listLLMModels(): Promise<ModelsResponse> {
   assertApiKey();
 
-  const url = ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
-    : "https://forge.manus.im/v1/models";
+  const url = hasOpenRouter()
+    ? `${ENV.openrouterApiUrl.replace(/\/$/, "")}/models`
+    : ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
+      : "https://forge.manus.im/v1/models";
 
   const response = await fetchWithBackoff(url, {
-    headers: { authorization: `Bearer ${ENV.forgeApiKey}` },
+    headers: {
+      authorization: `Bearer ${resolveApiKey()}`,
+      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
+    },
   });
 
   if (!response.ok) {

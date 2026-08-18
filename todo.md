@@ -142,4 +142,6 @@
 - [ ] Migrate the original StudentGPT application database layer from MySQL/TiDB to Supabase Postgres while preserving auth, storage, ownership, and academic workflows.
 - [ ] Use the existing Supabase project for StudentGPT application tables while preserving existing authentication and storage data.
 - [ ] Integrate Tavily server-side into StudentGPT research, validate the secret, add tests/documentation, and push the update to GitHub.
-- [ ] Diagnose and fix any SerpAPI research integration error, including credential validation, endpoint behavior, response normalization, and regression coverage.
+- [x] Diagnose and fix any SerpAPI research integration error, including credential validation, endpoint behavior, response normalization, and regression coverage.
+- [x] Verify Groq availability, credential validity, model configuration, and whether StudentGPT generation is actually routed through Groq.
+- [ ] Replace the built-in text-generation provider with server-side OpenRouter, validate the key, preserve structured outputs, and push the integration to GitHub.

@@ -11,7 +11,7 @@ StudentGPT is an authenticated AI-powered academic workspace for students. It is
 | Authentication | Supabase Auth with bearer-token verification on the server | Supabase project configuration |
 | Persistent data | Managed MySQL/TiDB through Drizzle | Database connection supplied by the platform |
 | Private document storage | Managed S3-compatible storage through the server storage helper | Server-only platform credentials |
-| AI | Server-side provider adapter using injected credentials | Server-only provider key |
+| AI | Server-side OpenRouter adapter with built-in provider fallback | Server-only provider key |
 
 ## Required environment variables
 
@@ -23,8 +23,11 @@ Copy `.env.example` to `.env` only for local development. Do not commit `.env`, 
 | `SUPABASE_ANON_KEY` | Browser email/password authentication | Client-safe publishable key only |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server verification and private document operations | **Server-only; never use in client code** |
 | `DATABASE_URL` | Persistent platform records | Server-only |
-| `BUILT_IN_FORGE_API_URL` | Server AI provider integration | Server-only |
-| `BUILT_IN_FORGE_API_KEY` | Server AI provider integration | **Server-only** |
+| `OPENROUTER_API_KEY` | Preferred server-side chat, research, notes, revision, quiz, and flashcard generation | **Server-only; never use in client code** |
+| `OPENROUTER_API_URL` | Optional OpenRouter endpoint override; defaults to `https://openrouter.ai/api/v1` | Server-only |
+| `OPENROUTER_MODEL` | Optional OpenRouter model override; defaults to `openai/gpt-4o-mini` | Server-only |
+| `BUILT_IN_FORGE_API_URL` | Fallback server AI provider integration when OpenRouter is not configured | Server-only |
+| `BUILT_IN_FORGE_API_KEY` | Fallback server AI provider integration | **Server-only** |
 
 ## Local development
 
@@ -34,6 +37,8 @@ Install dependencies and start the application:
 pnpm install
 pnpm dev
 ```
+
+When `OPENROUTER_API_KEY` is present, the shared server-side `invokeLLM` helper routes text and structured generation through OpenRouter. The existing built-in provider remains available as a fallback only when OpenRouter is not configured. The client and Flutter APK never receive either provider key.
 
 Run validation before submitting or deploying changes:
 
@@ -62,6 +67,6 @@ The document module uses the managed S3-compatible storage helper with user-scop
 
 ## Deployment preparation
 
-The app has a Node build and production start command in `package.json`. Set every production secret in the hosting platform’s encrypted environment configuration, run the test/build commands in CI, and configure the Supabase redirect URL for the final domain. The web/API process is stateless; document processing should run in a separate worker service with a durable queue so extraction never blocks an interactive study session.
+The app has a Node build and production start command in `package.json`. Set `OPENROUTER_API_KEY` and any optional `OPENROUTER_MODEL` value in the hosting platform’s encrypted environment configuration. Keep the built-in provider credentials only as a fallback. Run the test/build commands in CI and configure the Supabase redirect URL for the final domain. The web/API process is stateless; document processing should run in a separate worker service with a durable queue so extraction never blocks an interactive study session.
 
 > The managed project template currently provides a React + Express + tRPC runtime with its own database service. The included Supabase integration is used for authentication and private object storage. An external PostgreSQL/`pgvector` deployment remains an explicit scale-out migration path for the retrieval service rather than a hidden replacement for the running data layer.
