@@ -9,5 +9,9 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   openrouterApiUrl: process.env.OPENROUTER_API_URL ?? "https://openrouter.ai/api/v1",
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
-  openrouterModel: process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini",
+  openrouterModel: process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free",
+  openrouterFallbackModels: (process.env.OPENROUTER_FALLBACK_MODELS ?? "openai/gpt-oss-20b:free,nvidia/nemotron-3-ultra-550b-a55b:free")
+    .split(",")
+    .map(model => model.trim())
+    .filter(Boolean),
 };

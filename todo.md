@@ -147,3 +147,4 @@
 - [ ] Replace the built-in text-generation provider with server-side OpenRouter, validate the key, preserve structured outputs, and push the integration to GitHub.
 - [ ] Reconcile OpenRouter dashboard status 200 with StudentGPT’s deployed 403 by checking request headers, model, endpoint, and secret propagation.
 - [ ] Resolve the OpenRouter deployment/request mismatch without asking the user to rotate or re-enter a key again.
+- [ ] Configure OpenRouter fallback across Gemma 4, OpenAI GPT-OSS, and NVIDIA Nemotron 3 Ultra for all StudentGPT generation features, with retryable-limit handling and tests.

@@ -280,6 +280,27 @@ const RETRY_MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 30_000;
 
+const shouldRetryProviderStatus = (status: number) =>
+  status === 408 ||
+  status === 409 ||
+  status === 425 ||
+  status === 429 ||
+  status === 500 ||
+  status === 502 ||
+  status === 503 ||
+  status === 504;
+
+const shouldFallbackModelStatus = (status: number) =>
+  status === 403 || shouldRetryProviderStatus(status);
+
+const openRouterModelCandidates = (requestedModel?: string) => {
+  if (!hasOpenRouter()) return requestedModel ? [requestedModel] : [undefined];
+  const candidates = requestedModel
+    ? [requestedModel]
+    : [ENV.openrouterModel, ...ENV.openrouterFallbackModels];
+  return Array.from(new Set(candidates.filter(Boolean)));
+};
+
 type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
 
 const sleep = (ms: number) =>
@@ -309,14 +330,20 @@ const computeBackoffDelay = (
 // returns the final Response so callers keep their existing error handling.
 const fetchWithBackoff = async (
   url: string,
-  init: FetchInit
+  init: FetchInit,
+  retryProviderErrors = true
 ): Promise<Response> => {
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
     try {
       const response = await fetch(url, init);
-      if (response.ok || attempt === RETRY_MAX_RETRIES) {
+      if (
+        response.ok ||
+        attempt === RETRY_MAX_RETRIES ||
+        !retryProviderErrors ||
+        !shouldRetryProviderStatus(response.status)
+      ) {
         return response;
       }
 
@@ -409,23 +436,33 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetchWithBackoff(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${resolveApiKey()}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+  let lastError = "LLM invoke failed";
+  for (const candidate of openRouterModelCandidates(model)) {
+    if (candidate) payload.model = candidate;
+    const response = await fetchWithBackoff(
+      resolveApiUrl(),
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${resolveApiKey()}`,
+        },
+        body: JSON.stringify(payload),
+      },
+      !hasOpenRouter()
     );
+
+    if (response.ok) return (await response.json()) as InvokeResult;
+
+    const errorText = await response.text();
+    lastError = `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`;
+    if (!hasOpenRouter() || !shouldFallbackModelStatus(response.status)) {
+      throw new Error(lastError);
+    }
+    console.warn(`OpenRouter model ${candidate ?? "default"} failed with ${response.status}; trying the next configured model.`);
   }
 
-  return (await response.json()) as InvokeResult;
+  throw new Error(lastError);
 }
 
 /**
@@ -444,19 +481,31 @@ export async function streamLLM(params: InvokeParams): Promise<Response> {
   if (params.tools?.length) payload.tools = params.tools;
   const normalizedToolChoice = normalizeToolChoice(params.toolChoice || params.tool_choice, params.tools);
   if (normalizedToolChoice) payload.tool_choice = normalizedToolChoice;
-  const response = await fetchWithBackoff(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${resolveApiKey()}`,
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
+  let lastError = "LLM stream failed";
+  for (const candidate of openRouterModelCandidates(params.model)) {
+    if (candidate) payload.model = candidate;
+    const response = await fetchWithBackoff(
+      resolveApiUrl(),
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${resolveApiKey()}`,
+        },
+        body: JSON.stringify(payload),
+      },
+      !hasOpenRouter()
+    );
+    if (response.ok) return response;
+
     const errorText = await response.text();
-    throw new Error(`LLM stream failed: ${response.status} ${response.statusText} – ${errorText}`);
+    lastError = `LLM stream failed: ${response.status} ${response.statusText} – ${errorText}`;
+    if (!hasOpenRouter() || !shouldFallbackModelStatus(response.status)) {
+      throw new Error(lastError);
+    }
+    console.warn(`OpenRouter stream model ${candidate ?? "default"} failed with ${response.status}; trying the next configured model.`);
   }
-  return response;
+  throw new Error(lastError);
 }
 
 export type ModelInfo = {

@@ -25,7 +25,8 @@ Copy `.env.example` to `.env` only for local development. Do not commit `.env`, 
 | `DATABASE_URL` | Persistent platform records | Server-only |
 | `OPENROUTER_API_KEY` | Preferred server-side chat, research, notes, revision, quiz, and flashcard generation | **Server-only; never use in client code** |
 | `OPENROUTER_API_URL` | Optional OpenRouter endpoint override; defaults to `https://openrouter.ai/api/v1` | Server-only |
-| `OPENROUTER_MODEL` | Optional OpenRouter model override; defaults to `openai/gpt-4o-mini` | Server-only |
+| `OPENROUTER_MODEL` | Primary model; defaults to `google/gemma-4-31b-it:free` | Server-only |
+| `OPENROUTER_FALLBACK_MODELS` | Comma-separated fallback models; defaults to `openai/gpt-oss-20b:free,nvidia/nemotron-3-ultra-550b-a55b:free` | Server-only |
 | `BUILT_IN_FORGE_API_URL` | Fallback server AI provider integration when OpenRouter is not configured | Server-only |
 | `BUILT_IN_FORGE_API_KEY` | Fallback server AI provider integration | **Server-only** |
 
@@ -38,7 +39,7 @@ pnpm install
 pnpm dev
 ```
 
-When `OPENROUTER_API_KEY` is present, the shared server-side `invokeLLM` helper routes text and structured generation through OpenRouter. The existing built-in provider remains available as a fallback only when OpenRouter is not configured. The client and Flutter APK never receive either provider key.
+When `OPENROUTER_API_KEY` is present, the shared server-side `invokeLLM` helper routes text and structured generation through OpenRouter. The default free-model order is `google/gemma-4-31b-it:free`, then `openai/gpt-oss-20b:free`, then `nvidia/nemotron-3-ultra-550b-a55b:free`. A 403, 408, 409, 425, 429, or 5xx provider response advances to the next configured model; successful requests stop at the first responding model. The existing built-in provider remains available only when OpenRouter is not configured. The client and Flutter APK never receive either provider key.
 
 Run validation before submitting or deploying changes:
 
