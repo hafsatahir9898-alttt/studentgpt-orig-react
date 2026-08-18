@@ -414,7 +414,6 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${resolveApiKey()}`,
-      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -450,7 +449,6 @@ export async function streamLLM(params: InvokeParams): Promise<Response> {
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${resolveApiKey()}`,
-      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -485,7 +483,6 @@ export async function listLLMModels(): Promise<ModelsResponse> {
   const response = await fetchWithBackoff(url, {
     headers: {
       authorization: `Bearer ${resolveApiKey()}`,
-      ...(hasOpenRouter() ? { "HTTP-Referer": "https://studygpt-reoxkqlj.manus.space", "X-Title": "StudentGPT" } : {}),
     },
   });
 

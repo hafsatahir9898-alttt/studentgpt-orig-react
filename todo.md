@@ -145,3 +145,5 @@
 - [x] Diagnose and fix any SerpAPI research integration error, including credential validation, endpoint behavior, response normalization, and regression coverage.
 - [x] Verify Groq availability, credential validity, model configuration, and whether StudentGPT generation is actually routed through Groq.
 - [ ] Replace the built-in text-generation provider with server-side OpenRouter, validate the key, preserve structured outputs, and push the integration to GitHub.
+- [ ] Reconcile OpenRouter dashboard status 200 with StudentGPT’s deployed 403 by checking request headers, model, endpoint, and secret propagation.
+- [ ] Resolve the OpenRouter deployment/request mismatch without asking the user to rotate or re-enter a key again.
