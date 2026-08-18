@@ -148,3 +148,4 @@
 - [ ] Reconcile OpenRouter dashboard status 200 with StudentGPT’s deployed 403 by checking request headers, model, endpoint, and secret propagation.
 - [ ] Resolve the OpenRouter deployment/request mismatch without asking the user to rotate or re-enter a key again.
 - [ ] Configure OpenRouter fallback across Gemma 4, OpenAI GPT-OSS, and NVIDIA Nemotron 3 Ultra for all StudentGPT generation features, with retryable-limit handling and tests.
+- [ ] Synchronize OpenRouter fallback routes and safe environment documentation across the React and Flutter repositories, make both GitHub repositories private, and verify no secrets are committed.
